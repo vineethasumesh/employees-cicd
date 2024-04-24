@@ -14,7 +14,7 @@ pipeline {
         }
         stage('Maven Build') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                bat 'mvn clean package -DskipTests'
                 echo 'Maven build Completed'
             }
         }
@@ -23,7 +23,7 @@ pipeline {
                 // Run Junit tests
                 script {
                     try {
-                        sh 'mvn clean test surefire-report:report' 
+                        bat 'mvn clean test surefire-report:report' 
                         //junit 'src/reports/*-jupiter.xml'
                     } catch (err) {
                         currentBuild.result = 'FAILURE'
@@ -38,74 +38,12 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh '''mvn clean verify sonar:sonar -Dsonar.projectKey=cicd-full -Dsonar.projectName='cicd-full' -Dsonar.host.url=http://localhost:9000''' //port 9000 is default for sonar
+                    bat '''mvn clean verify sonar:sonar -Dsonar.projectKey=cicd-full -Dsonar.projectName='cicd-full' -Dsonar.host.url=http://localhost:9000''' //port 9000 is default for sonar
                     echo 'SonarQube Analysis Completed'
                 }
             }
         }
-        stage('Copy artifacts to EC2') {
-            steps {
-                sshPublisher(
-                    publishers: [
-                        sshPublisherDesc(
-                            configName: 'ansible-server',
-                            transfers: [
-                                sshTransfer(
-                                    cleanRemote: false,
-                                    excludes: '',
-                                    execCommand: '',
-                                    execTimeout: 120000,
-                                    flatten: false,
-                                    makeEmptyDirs: false,
-                                    noDefaultExcludes: false,
-                                    patternSeparator: '[, ]+',
-                                    remoteDirectory: '//opt//deploy-sharun',
-                                    remoteDirectorySDF: false,
-                                    removePrefix: 'target',
-                                    sourceFiles: 'target/*.jar'
-                                )
-                            ],
-                            usePromotionTimestamp: false,
-                            useWorkspaceInPromotion: false,
-                            verbose: false
-                        )
-                    ]
-                )
-            }
-        }
-        stage('Deploy') {
-            steps {
-                sshPublisher(
-                    publishers: [
-                        sshPublisherDesc(
-                            configName: 'ansible-server',
-                            transfers: [
-                                sshTransfer(
-                                    cleanRemote: false,
-                                    excludes: '',
-                                    execCommand: '''
-                                        cd /opt/deploy-sharun/
-                                        ansible-playbook start_container.yml
-                                    ''',
-                                    execTimeout: 120000,
-                                    flatten: false,
-                                    makeEmptyDirs: false,
-                                    noDefaultExcludes: false,
-                                    patternSeparator: '[, ]+',
-                                    remoteDirectory: '',
-                                    remoteDirectorySDF: false,
-                                    removePrefix: '',
-                                    sourceFiles: ''
-                                )
-                            ],
-                            usePromotionTimestamp: false,
-                            useWorkspaceInPromotion: false,
-                            verbose: false
-                        )
-                    ]
-                )
-            }
-        }
+        
 
     }
     post {
