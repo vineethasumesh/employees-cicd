@@ -1,30 +1,28 @@
-
 pipeline {
     agent any
     tools {
-        maven 'maven'
+        maven 'Maven'
     }
 
     stages {
         stage('Git Checkout') {
             steps {
-                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/vineethasumesh/employees-cicd.git']])
+                checkout scmGit(branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/vineethasumesh/employees-cicd.git']])
                 echo 'Git Checkout Completed'
             }
         }
-        stage('Maven Build') {
+    stage('Maven Build') {
             steps {
                 bat 'mvn clean package -DskipTests'
                 echo 'Maven build Completed'
             }
         }
-        stage('JUnit Test') {
+    stage('JUnit Test') {
             steps {
-                // Run Junit tests
+                // Run unit tests
                 script {
                     try {
                         bat 'mvn clean test surefire-report:report' 
-                        //junit 'src/reports/*-jupiter.xml'
                     } catch (err) {
                         currentBuild.result = 'FAILURE'
                         echo 'Unit tests failed!'
@@ -34,8 +32,7 @@ pipeline {
                 echo 'JUnit test Completed'
             }
         }
-
-        stage('SonarQube Analysis') {
+    stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     bat '''mvn clean verify sonar:sonar -Dsonar.projectKey=VIN -Dsonar.projectName='VIN' -Dsonar.host.url=http://localhost:9000''' //port 9000 is default for sonar
@@ -43,7 +40,7 @@ pipeline {
                 }
             }
         }
-        stage('Copy artifact to EC2') {
+    stage('Copy artifact to EC2') {
             steps {
                 sshPublisher(
                     publishers: [
@@ -71,7 +68,6 @@ pipeline {
                         )
                     ]
                 )
-                echo 'Copying Jar to EC2 Completed'
             }
         }
         stage('Run Docker Container') {
@@ -105,11 +101,10 @@ pipeline {
                         )
                     ]
                 )
-                echo 'Deployment Completed'
+                 echo 'Deployment Completed'
             }
         }
-        
-        
+    
 
     }
     post {
